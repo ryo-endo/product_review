@@ -24,7 +24,7 @@ class UnitTest extends AbstractAdminWebTestCase
      */
     public function test_routing_review_edit()
     {
-        $test_review_id = $this->get_test_review_id();
+        $test_review_id = $this->get_test_review_id(1);
         $crawler = $this->client->request('GET',
             $this->app->url('admin_product_review_edit', array('id' => $test_review_id))
         );
@@ -37,16 +37,23 @@ class UnitTest extends AbstractAdminWebTestCase
      */
     public function test_review_edit()
     {
-        $test_review_id = $this->get_test_review_id();
-        $formData = $this->createReviewFormData(1);
+        $test_review_id = $this->get_test_review_id(1);
+        $formData = $this->createReviewFormData(2, $test_review_id);
+        $ProductReview = $this->app['eccube.plugin.product_review.repository.product_review']->find($test_review_id);
         $crawler = $this->client->request(
             'POST',
             $this->app->url('admin_product_review_edit', array('id' => $test_review_id)),
-            array('product_review' => $formData)
+            array(
+                    'product_review' => $formData,
+                    'Product' => $ProductReview->getProduct()
+            )
         );
-        $Review = $this->app['eccube.plugin.product_review.repository.product_review']->find($test_review_id);
-        $this->expected = $this->createReviewFormData(1)['reviewer_name'];
-        $this->actual = $Review->getReviewerName();
+
+        $this->assertTrue($this->client->getResponse()->isRedirect($this->app->url('admin_product_review')));
+
+        $ProductReview = $this->app['eccube.plugin.product_review.repository.product_review']->find($test_review_id);
+        $this->expected = $formData['reviewer_name'];
+        $this->actual = $ProductReview->getReviewerName();
         $this->verify();
     }
 
@@ -90,12 +97,16 @@ class UnitTest extends AbstractAdminWebTestCase
 
     }
 
-    public function get_test_review_id()
+    /**
+     * 商品レビューのIDを取得
+     */
+    public function get_test_review_id($status)
     {
-        $TestReview = $this->createReview(0, 'lamlam123', 1);
+        $faker = $this->getFaker();
+        $TestReview = $this->createReview(0, $faker->word, $status);
         $test_review_id = $this->app['eccube.plugin.product_review.repository.product_review']
             ->findOneBy(array(
-                'reviewer_name' => $TestReview->getReviewerName('lamlam123')
+                'reviewer_name' => $TestReview->getReviewerName()
             ))
             ->getId();
         return $test_review_id;
@@ -103,19 +114,24 @@ class UnitTest extends AbstractAdminWebTestCase
     /**
      * Create new review data
      */
-    public function createReviewFormData($product_id)
+    public function createReviewFormData($status, $id)
     {
         $faker = $this->getFaker();
         $form = array(
-            'comment' => $faker->word,
-            'reviewer_name' => $faker->word,
-            'title' => $faker->word,
-            'recommend_level' => 5,
-            'product_id' => $product_id,
+            //'id' => $id,
             '_token' => 'dummy',
+            //'create_date' => $faker->dateTime,
+            'reviewer_name' => $faker->word,
+            'reviewer_url' => $faker->url,
+            'sex' => 1,
+            'recommend_level' => 5,
+            'title' => $faker->word,
+            'comment' => $faker->word,
+            'status' => $status
         );
         return $form;
     }
+
 
     /**
      * レビュー作成
