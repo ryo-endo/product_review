@@ -49,6 +49,7 @@ class UnitTest extends AbstractAdminWebTestCase
         $test_review_id = $this->get_test_review_id($this->TestReview);
         $formData = $this->reviewAdminEditForm($test_review_id, 1);
         $this->assertTrue($this->client->getResponse()->isRedirect($this->app->url('admin_product_review')));
+        echo $test_review_id;
         $ProductReview = $this->app['eccube.plugin.product_review.repository.product_review']->find($test_review_id);
         $this->expected = $formData['reviewer_name'];
         $this->actual = $ProductReview->getReviewerName();
